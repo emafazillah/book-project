@@ -15,28 +15,17 @@
 
 package com.karankumar.bookproject.ui.shelf;
 
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.AUTHOR_KEY;
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.DATE_FINISHED_KEY;
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.DATE_STARTED_KEY;
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.GENRE_KEY;
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.PAGES_KEY;
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.RATING_KEY;
-import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.TITLE_KEY;
-
-
 import com.github.mvysny.kaributesting.v10.MockVaadin;
 import com.github.mvysny.kaributesting.v10.Routes;
 import com.karankumar.bookproject.backend.model.Book;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.service.BookService;
+import com.karankumar.bookproject.backend.service.CustomShelfService;
 import com.karankumar.bookproject.backend.service.PredefinedShelfService;
 import com.karankumar.bookproject.ui.MockSpringServlet;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.spring.SpringServlet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -51,6 +40,18 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.AUTHOR_KEY;
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.DATE_FINISHED_KEY;
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.DATE_STARTED_KEY;
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.GENRE_KEY;
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.PAGES_KEY;
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.RATING_KEY;
+import static com.karankumar.bookproject.ui.shelf.BooksInShelfView.TITLE_KEY;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -92,12 +93,13 @@ public class BooksInShelfViewTests {
 
     @BeforeEach
     public void setup(@Autowired BookService bookService,
-                      @Autowired PredefinedShelfService shelfService) {
+                      @Autowired PredefinedShelfService predefinedShelfService,
+                      @Autowired CustomShelfService customShelfService) {
         final SpringServlet servlet = new MockSpringServlet(routes, ctx);
         MockVaadin.setup(UI::new, servlet);
 
-        Assumptions.assumeTrue(shelfService != null);
-        shelfView = new BooksInShelfView(bookService, shelfService);
+        Assumptions.assumeTrue(predefinedShelfService != null);
+        shelfView = new BooksInShelfView(bookService, predefinedShelfService, customShelfService);
     }
 
     @AfterEach

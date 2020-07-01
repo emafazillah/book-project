@@ -15,18 +15,21 @@
 
 package com.karankumar.bookproject.backend.model;
 
-import java.time.LocalDate;
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.time.LocalDate;
+import java.util.Set;
 
 /**
  * A {@code Book} object represents a single book with its corresponding metadata, such as an Author, genre and rating.
@@ -57,6 +60,9 @@ public class Book extends BaseEntity {
     @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
     @JoinColumn(name = "shelf_id")
     private PredefinedShelf shelf;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<CustomShelf> customShelves;
 
     public Book(String title, Author author) {
         this.title = title;

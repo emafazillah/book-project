@@ -39,14 +39,13 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.shared.Registration;
+import lombok.extern.java.Log;
+
+import javax.transaction.NotSupportedException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
-import lombok.extern.java.Log;
-import org.hibernate.event.spi.DeleteEvent;
-
-import javax.transaction.NotSupportedException;
 
 /**
  * A Vaadin form for adding a new {@code Book}.
@@ -60,6 +59,7 @@ public class BookForm extends VerticalLayout {
     private static final String ENTER_DATE = "Enter a date";
     private static final String LABEL_ADD_BOOK = "Add book";
     private static final String LABEL_UPDATE_BOOK = "Update book";
+
     public final TextField bookTitle = new TextField();
     public final TextField authorFirstName = new TextField();
     public final TextField authorLastName = new TextField();
@@ -76,7 +76,9 @@ public class BookForm extends VerticalLayout {
     private final FormLayout.FormItem finished;
     private final FormLayout.FormItem ratingFormItem;
     private final Dialog dialog;
+
     public Button delete = new Button();
+
     Binder<Book> binder = new BeanValidationBinder<>(Book.class);
 
     public BookForm(PredefinedShelfService shelfService) {
@@ -146,7 +148,6 @@ public class BookForm extends VerticalLayout {
     private void closeForm() {
         dialog.close();
     }
-
 
     private void configureBinder() {
         final String AFTER_TODAY_PREFIX = "The date you";

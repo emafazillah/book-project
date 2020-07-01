@@ -23,6 +23,10 @@ import com.karankumar.bookproject.backend.model.RatingScale;
 import com.karankumar.bookproject.backend.repository.AuthorRepository;
 import com.karankumar.bookproject.backend.repository.BookRepository;
 import com.karankumar.bookproject.backend.repository.PredefinedShelfRepository;
+import lombok.extern.java.Log;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
@@ -30,9 +34,6 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import lombok.extern.java.Log;
-import org.springframework.stereotype.Service;
 
 /**
  * A Spring service that acts as the gateway to the {@code ShelfRepository} -- to use the {@code ShelfRepository},
@@ -43,47 +44,47 @@ import org.springframework.stereotype.Service;
 public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
 
     private BookRepository bookRepository;
-    private PredefinedShelfRepository shelfRepository;
+    private PredefinedShelfRepository predefinedShelfRepository;
     private AuthorRepository authorRepository;
 
     public PredefinedShelfService(BookRepository bookRepository, AuthorRepository authorRepository,
                                   PredefinedShelfRepository shelfRepository) {
         this.bookRepository = bookRepository;
-        this.shelfRepository = shelfRepository;
+        this.predefinedShelfRepository = shelfRepository;
 
         this.authorRepository = authorRepository;
     }
 
     @Override
     public PredefinedShelf findById(Long id) {
-        return shelfRepository.getOne(id);
+        return predefinedShelfRepository.getOne(id);
     }
 
     @Override
     public void save(PredefinedShelf shelf) {
         if (shelf != null) {
             LOGGER.log(Level.INFO, "Saving shelf: " + shelf);
-            shelfRepository.save(shelf);
+            predefinedShelfRepository.save(shelf);
         } else {
             LOGGER.log(Level.SEVERE, "Null Shelf");
         }
     }
 
     public List<PredefinedShelf> findAll() {
-        return shelfRepository.findAll();
+        return predefinedShelfRepository.findAll();
     }
 
     public List<PredefinedShelf> findAll(PredefinedShelf.ShelfName shelfName) {
         if (shelfName == null) {
-            return shelfRepository.findAll();
+            return predefinedShelfRepository.findAll();
         } else {
-            return shelfRepository.findPredefinedShelfByShelfName(shelfName);
+            return predefinedShelfRepository.findPredefinedShelfByShelfName(shelfName);
         }
     }
 
     @Override
     public void delete(PredefinedShelf shelf) {
-        shelfRepository.delete(shelf);
+        predefinedShelfRepository.delete(shelf);
     }
 
     @Override
@@ -142,9 +143,9 @@ public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
                     }).collect(Collectors.toList()));
         }
 
-        if (shelfRepository.count() == 0) {
+        if (predefinedShelfRepository.count() == 0) {
             List<Book> books = bookRepository.findAll();
-            shelfRepository.saveAll(
+            predefinedShelfRepository.saveAll(
                 Stream.of(PredefinedShelf.ShelfName.values())
                     .map(b -> {
                         PredefinedShelf shelf = new PredefinedShelf(b);
@@ -154,7 +155,7 @@ public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
         }
 
         List<Book> books = bookRepository.findAll();
-        List<PredefinedShelf> shelves = shelfRepository.findAll();
+        List<PredefinedShelf> shelves = predefinedShelfRepository.findAll();
 
         Random random = new Random(0);
 
@@ -174,8 +175,7 @@ public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
                     book.setRating(RatingScale.NO_RATING);
                     break;
                 case READ:
-                    book.setRating(
-                        RatingScale.values()[random.nextInt(RatingScale.values().length)]);
+                    book.setRating(RatingScale.values()[random.nextInt(RatingScale.values().length)]);
                     book.setDateStartedReading(LocalDate.now().minusDays(2));
                     book.setDateFinishedReading(LocalDate.now());
                     break;

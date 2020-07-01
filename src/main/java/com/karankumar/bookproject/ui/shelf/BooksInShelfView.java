@@ -18,6 +18,7 @@ package com.karankumar.bookproject.ui.shelf;
 import com.karankumar.bookproject.backend.model.Book;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.service.BookService;
+import com.karankumar.bookproject.backend.service.CustomShelfService;
 import com.karankumar.bookproject.backend.service.PredefinedShelfService;
 import com.karankumar.bookproject.ui.MainView;
 import com.karankumar.bookproject.ui.book.BookForm;
@@ -39,7 +40,6 @@ import java.time.format.FormatStyle;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
-import lombok.extern.java.Log;
 
 /**
  * Contains a {@code BookForm} and a Grid containing a list of books in a given {@code Shelf}.
@@ -50,8 +50,6 @@ import lombok.extern.java.Log;
 @PageTitle("My Books | Book Project")
 @Log
 public class BooksInShelfView extends VerticalLayout {
-
-
     public static final String TITLE_KEY = "title";
     public static final String AUTHOR_KEY = "author";
     public static final String GENRE_KEY = "genre";
@@ -59,18 +57,25 @@ public class BooksInShelfView extends VerticalLayout {
     public static final String RATING_KEY = "rating";
     public static final String DATE_STARTED_KEY = "dateStartedReading";
     public static final String DATE_FINISHED_KEY = "dateFinishedReading";
+
     public final Grid<Book> bookGrid = new Grid<>(Book.class);
     public final ComboBox<PredefinedShelf.ShelfName> whichShelf;
+
     private final BookForm bookForm;
+    private final CustomShelfForm shelfForm;
     private final BookService bookService;
-    private final PredefinedShelfService shelfService;
+    private final PredefinedShelfService predefinedShelfService;
+    private final CustomShelfService customShelfService;
     private final TextField filterByTitle;
+
     private PredefinedShelf.ShelfName chosenShelf;
     private String bookTitle; // the book to filter by (if specified)
 
-    public BooksInShelfView(BookService bookService, PredefinedShelfService shelfService) {
+    public BooksInShelfView(BookService bookService,
+                            PredefinedShelfService predefinedShelfService, CustomShelfService customShelfService) {
         this.bookService = bookService;
-        this.shelfService = shelfService;
+        this.predefinedShelfService = predefinedShelfService;
+        this.customShelfService = customShelfService;
 
         whichShelf = new ComboBox<>();
         configureChosenShelf();
@@ -78,20 +83,26 @@ public class BooksInShelfView extends VerticalLayout {
         filterByTitle = new TextField();
         configureFilter();
 
-        bookForm = new BookForm(shelfService);
+        bookForm = new BookForm(predefinedShelfService);
+        shelfForm = new CustomShelfForm(customShelfService);
 
         Button addBook = new Button("Add book");
         addBook.addClickListener(e -> {
             bookForm.addBook();
         });
+        Button createShelf = new Button("Create shelf");
+        createShelf.addClickListener(e -> {
+            shelfForm.addShelf();
+        });
         HorizontalLayout horizontalLayout =
-            new HorizontalLayout(whichShelf, filterByTitle, addBook);
+            new HorizontalLayout(whichShelf, filterByTitle, addBook, createShelf);
         horizontalLayout.setAlignItems(Alignment.END);
 
         configureBookGrid();
         add(horizontalLayout, bookGrid);
 
         add(bookForm);
+        add(shelfForm);
 
         bookForm.addListener(BookForm.SaveEvent.class, this::saveBook);
         bookForm.addListener(BookForm.DeleteEvent.class, this::deleteBook);
@@ -183,7 +194,7 @@ public class BooksInShelfView extends VerticalLayout {
         }
 
         // Find the shelf that matches the chosen shelf's name
-        List<PredefinedShelf> matchingShelves = shelfService.findAll(chosenShelf);
+        List<PredefinedShelf> matchingShelves = predefinedShelfService.findAll(chosenShelf);
 
         if (!matchingShelves.isEmpty()) {
             if (bookTitle != null && !bookTitle.isEmpty()) {
