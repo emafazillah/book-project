@@ -15,6 +15,7 @@
 
 package com.karankumar.bookproject.ui.shelf;
 
+import com.karankumar.bookproject.backend.model.CustomShelf;
 import com.karankumar.bookproject.backend.service.CustomShelfService;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
@@ -23,6 +24,8 @@ import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.binder.BeanValidationBinder;
+import com.vaadin.flow.data.binder.Binder;
 import lombok.extern.java.Log;
 
 import java.util.logging.Level;
@@ -44,6 +47,8 @@ public class CustomShelfForm extends VerticalLayout {
 
     public Button delete = new Button();
 
+    Binder<CustomShelf> binder = new BeanValidationBinder<>(CustomShelf.class);
+
     public CustomShelfForm(CustomShelfService customShelfService) {
         this.customShelfService = customShelfService;
 
@@ -55,6 +60,7 @@ public class CustomShelfForm extends VerticalLayout {
         FormLayout formLayout = new FormLayout();
         dialog.add(formLayout);
 
+        configureBinder();
         configureShelfName();
 
         formLayout.setResponsiveSteps();
@@ -75,6 +81,12 @@ public class CustomShelfForm extends VerticalLayout {
     private void configureSaveButton() {
         saveButton.setText("Add shelf");
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+    }
+
+    private void configureBinder() {
+        binder.forField(shelfName)
+            .asRequired("Please enter a shelf name")
+            .bind(CustomShelf::getShelfName, CustomShelf::setShelfName);
     }
 
     public void addShelf() {

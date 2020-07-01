@@ -3,19 +3,23 @@ package com.karankumar.bookproject.backend.model;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToMany;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.util.List;
 import java.util.Set;
 
 @Entity
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CustomShelf extends BaseEntity {
+    /**
+     * When setting the shelfName, it is expected that there are no name clashes with any other shelf
+     */
     @NotNull
     @NotEmpty
     private String shelfName;
@@ -28,23 +32,8 @@ public class CustomShelf extends BaseEntity {
     }
 
     public CustomShelf(@NotNull @NotEmpty String shelfName, Set<Book> books) {
-        setShelfName(shelfName);
+        this.shelfName = shelfName;
         this.books = books;
-    }
-
-    /**
-     * @param shelfName name of the shelf
-     * @return true if the shelf name was set and false otherwise
-     */
-    public boolean setShelfName(String shelfName) {
-        List<PredefinedShelf.ShelfName> predefinedShelves = List.of(PredefinedShelf.ShelfName.values());
-        boolean set = false;
-
-        if (!predefinedShelves.contains(shelfName)) {
-            this.shelfName = shelfName;
-            set = true;
-        }
-        return set;
     }
 
     public void setBooks(Set<Book> books) {
