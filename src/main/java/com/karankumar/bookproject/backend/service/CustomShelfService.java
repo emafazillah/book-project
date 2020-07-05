@@ -21,6 +21,7 @@ import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * A Spring service that acts as the gateway to the {@code ShelfRepository} -- to use the {@code ShelfRepository},
@@ -43,7 +44,12 @@ public class CustomShelfService extends BaseService<CustomShelf, Long> {
 
     @Override
     public void save(CustomShelf shelf) {
-        customShelfRepository.save(shelf);
+        if (shelf != null) {
+            LOGGER.log(Level.INFO, "Saving shelf: " + shelf);
+            customShelfRepository.save(shelf);
+        } else {
+            LOGGER.log(Level.SEVERE, "Null Shelf");
+        }
     }
 
     public List<CustomShelf> findAll() {
@@ -51,7 +57,11 @@ public class CustomShelfService extends BaseService<CustomShelf, Long> {
     }
 
     public List<CustomShelf> findAll(String shelfName) {
-        return customShelfRepository.findAll();
+        if (shelfName == null) {
+            return customShelfRepository.findAll();
+        } else {
+            return customShelfRepository.findCustomShelfByShelfName(shelfName);
+        }
     }
 
     @Override

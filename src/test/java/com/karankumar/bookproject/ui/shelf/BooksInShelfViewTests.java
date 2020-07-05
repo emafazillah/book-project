@@ -112,7 +112,7 @@ public class BooksInShelfViewTests {
     public void correctGridColumnsShow(PredefinedShelf.ShelfName shelfName) {
         System.out.println("Shelf: " + shelfName);
 
-        shelfView.showOrHideGridColumns(shelfName);
+        shelfView.showOrHideGridColumns(shelfName.toString());
         List<Grid.Column<Book>> columns = shelfView.bookGrid.getColumns();
 
         ArrayList<String> expectedColumns = new ArrayList<>();

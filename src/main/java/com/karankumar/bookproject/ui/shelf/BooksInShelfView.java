@@ -16,6 +16,7 @@
 package com.karankumar.bookproject.ui.shelf;
 
 import com.karankumar.bookproject.backend.model.Book;
+import com.karankumar.bookproject.backend.model.CustomShelf;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.service.BookService;
 import com.karankumar.bookproject.backend.service.CustomShelfService;
@@ -37,9 +38,11 @@ import lombok.extern.java.Log;
 
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Contains a {@code BookForm} and a Grid containing a list of books in a given {@code Shelf}.
@@ -59,7 +62,8 @@ public class BooksInShelfView extends VerticalLayout {
     public static final String DATE_FINISHED_KEY = "dateFinishedReading";
 
     public final Grid<Book> bookGrid = new Grid<>(Book.class);
-    public final ComboBox<PredefinedShelf.ShelfName> whichShelf;
+    //    public final ComboBox<PredefinedShelf.ShelfName> whichShelf;
+    public final ComboBox<String> whichShelf;
 
     private final BookForm bookForm;
     private final CustomShelfForm shelfForm;
@@ -68,7 +72,8 @@ public class BooksInShelfView extends VerticalLayout {
     private final CustomShelfService customShelfService;
     private final TextField filterByTitle;
 
-    private PredefinedShelf.ShelfName chosenShelf;
+    //    private PredefinedShelf.ShelfName chosenShelf;
+    private String chosenShelf;
     private String bookTitle; // the book to filter by (if specified)
 
     public BooksInShelfView(BookService bookService,
@@ -87,15 +92,10 @@ public class BooksInShelfView extends VerticalLayout {
         shelfForm = new CustomShelfForm(customShelfService);
 
         Button addBook = new Button("Add book");
-        addBook.addClickListener(e -> {
-            bookForm.addBook();
-        });
+        addBook.addClickListener(e -> bookForm.addBook());
         Button createShelf = new Button("Create shelf");
-        createShelf.addClickListener(e -> {
-            shelfForm.addShelf();
-        });
-        HorizontalLayout horizontalLayout =
-            new HorizontalLayout(whichShelf, filterByTitle, addBook, createShelf);
+        createShelf.addClickListener(e -> shelfForm.addShelf());
+        HorizontalLayout horizontalLayout = new HorizontalLayout(whichShelf, filterByTitle, addBook, createShelf);
         horizontalLayout.setAlignItems(Alignment.END);
 
         configureBookGrid();
@@ -107,23 +107,37 @@ public class BooksInShelfView extends VerticalLayout {
         bookForm.addListener(BookForm.SaveEvent.class, this::saveBook);
         bookForm.addListener(BookForm.DeleteEvent.class, this::deleteBook);
 
+        shelfForm.addListener(CustomShelfForm.SaveEvent.class, this::saveShelf);
+
         bookGrid
-            .asSingleSelect()
-            .addValueChangeListener(
-                event -> {
-                    if (event == null) {
-                        LOGGER.log(Level.FINE, "Event is null");
-                    } else if (event.getValue() == null) {
-                        LOGGER.log(Level.FINE, "Event value is null");
-                    } else {
-                        editBook(event.getValue());
-                    }
-                });
+                .asSingleSelect()
+                .addValueChangeListener(
+                        event -> {
+                            if (event == null) {
+                                LOGGER.log(Level.FINE, "Event is null");
+                            } else if (event.getValue() == null) {
+                                LOGGER.log(Level.FINE, "Event value is null");
+                            } else {
+                                editBook(event.getValue());
+                            }
+                        }
+                );
     }
 
     private void configureChosenShelf() {
         whichShelf.setPlaceholder("Select shelf");
-        whichShelf.setItems(PredefinedShelf.ShelfName.values());
+
+        List<String> shelfNames = new ArrayList<>();
+        // first add the predefined shelves
+        for (PredefinedShelf.ShelfName name : PredefinedShelf.ShelfName.values()) {
+            shelfNames.add(name.toString());
+        }
+        shelfNames.addAll(customShelfService.findAll().stream()
+                .map(CustomShelf::getShelfName)
+                .collect(Collectors.toList()));
+        whichShelf.setItems(shelfNames);
+
+//        whichShelf.setItems(PredefinedShelf.ShelfName.values());
         whichShelf.setRequired(true);
         whichShelf.addValueChangeListener(event -> {
             if (event.getValue() == null) {
@@ -136,8 +150,16 @@ public class BooksInShelfView extends VerticalLayout {
         });
     }
 
-    void showOrHideGridColumns(PredefinedShelf.ShelfName shelfName) {
-        switch (shelfName) {
+    void showOrHideGridColumns(String shelfName) {
+        PredefinedShelf.ShelfName predefinedShelfName = whichPredefinedShelf(shelfName);
+        if (predefinedShelfName == null) {
+            toggleColumn(RATING_KEY, true);
+            toggleColumn(DATE_STARTED_KEY, true);
+            toggleColumn(DATE_FINISHED_KEY, true);
+            return;
+        }
+
+        switch (predefinedShelfName) {
             case TO_READ:
                 toggleColumn(RATING_KEY, false);
                 toggleColumn(DATE_STARTED_KEY, false);
@@ -158,12 +180,27 @@ public class BooksInShelfView extends VerticalLayout {
         }
     }
 
-    private void toggleColumn(String columnKey, boolean isOn) {
-        if (bookGrid.getColumnByKey(columnKey) == null) {
-            LOGGER.log(Level.SEVERE, "Key is null:" + columnKey);
-        } else {
-          bookGrid.getColumnByKey(columnKey).setVisible(isOn);
+    /**
+     * Checks whether a shelf name matches a predefined shelf name.
+     *
+     * @param shelfName the name of the shelf to check whether it matches a predefined shelf
+     * @return the enum value of the PredefinedShelf. If the passed in shelf name does not match the name of a
+     * predefined shelf, null is returned.
+     */
+    private PredefinedShelf.ShelfName whichPredefinedShelf(String shelfName) {
+        PredefinedShelf.ShelfName predefinedShelf = null;
+        PredefinedShelf.ShelfName[] predefinedShelfNames = PredefinedShelf.ShelfName.values();
+        for (PredefinedShelf.ShelfName predefinedShelfName : predefinedShelfNames) {
+            if (predefinedShelfName.toString().equals(shelfName)) {
+                predefinedShelf = predefinedShelfName;
+                break;
+            }
         }
+        return predefinedShelf;
+    }
+
+    private void toggleColumn(String columnKey, boolean isOn) {
+        bookGrid.getColumnByKey(columnKey).setVisible(isOn);
     }
 
     private void configureBookGrid() {
@@ -172,16 +209,16 @@ public class BooksInShelfView extends VerticalLayout {
 
         bookGrid.addColumn(new LocalDateRenderer<>(
                 Book::getDateStartedReading, DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
-				.setHeader("Date started reading")
-				.setComparator(Comparator.comparing(Book::getDateStartedReading))
+                .setHeader("Date started reading")
+                .setComparator(Comparator.comparing(Book::getDateStartedReading))
                 .setKey(DATE_STARTED_KEY);
 
         bookGrid.addColumn(new LocalDateRenderer<>(
                 Book::getDateFinishedReading, DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
-            .setHeader("Date finished reading")
-            .setComparator(Comparator.comparing(Book::getDateStartedReading))
-			.setSortable(true)
-            .setKey(DATE_FINISHED_KEY);
+                .setHeader("Date finished reading")
+                .setComparator(Comparator.comparing(Book::getDateStartedReading))
+                .setSortable(true)
+                .setKey(DATE_FINISHED_KEY);
 
         bookGrid.addColumn(RATING_KEY);
         bookGrid.addColumn(PAGES_KEY);
@@ -193,23 +230,58 @@ public class BooksInShelfView extends VerticalLayout {
             return;
         }
 
-        // Find the shelf that matches the chosen shelf's name
-        List<PredefinedShelf> matchingShelves = predefinedShelfService.findAll(chosenShelf);
+        PredefinedShelf.ShelfName predefinedShelfName = whichPredefinedShelf(chosenShelf);
+        if (predefinedShelfName == null) {
+            List<CustomShelf> matchingShelves = customShelfService.findAll(chosenShelf);
 
-        if (!matchingShelves.isEmpty()) {
-            if (bookTitle != null && !bookTitle.isEmpty()) {
-                LOGGER.log(Level.INFO, "Searching for the filter " + bookTitle);
-                bookGrid.setItems(bookService.findAll(bookTitle));
-            } else if (matchingShelves.size() == 1) {
-                LOGGER.log(Level.INFO, "Found 1 shelf: " + matchingShelves.get(0));
-                PredefinedShelf selectedShelf = matchingShelves.get(0);
-                bookGrid.setItems(selectedShelf.getBooks());
+            if (!matchingShelves.isEmpty()) {
+                if (bookTitle != null && !bookTitle.isEmpty()) {
+                    LOGGER.log(Level.INFO, "Searching for the filter " + bookTitle);
+                    bookGrid.setItems(bookService.findAll(bookTitle));
+                } else if (matchingShelves.size() == 1) {
+                    LOGGER.log(Level.INFO, "Found 1 shelf: " + matchingShelves.get(0));
+                    CustomShelf selectedShelf = matchingShelves.get(0);
+                    bookGrid.setItems(selectedShelf.getBooks());
+                } else {
+                    LOGGER.log(Level.SEVERE, matchingShelves.size() + " matching shelves found for " + chosenShelf);
+                }
             } else {
-                LOGGER.log(Level.SEVERE, matchingShelves.size() + " matching shelves found for " + chosenShelf);
+                LOGGER.log(Level.SEVERE, "No matching shelves found for " + chosenShelf);
             }
         } else {
-            LOGGER.log(Level.SEVERE, "No matching shelves found for " + chosenShelf);
+            // Find the shelf that matches the chosen shelf's name
+            List<PredefinedShelf> matchingShelves = predefinedShelfService.findAll(predefinedShelfName);
+
+            if (!matchingShelves.isEmpty()) {
+                if (bookTitle != null && !bookTitle.isEmpty()) {
+                    LOGGER.log(Level.INFO, "Searching for the filter " + bookTitle);
+                    bookGrid.setItems(bookService.findAll(bookTitle));
+                } else if (matchingShelves.size() == 1) {
+                    LOGGER.log(Level.INFO, "Found 1 shelf: " + matchingShelves.get(0));
+                    PredefinedShelf selectedShelf = matchingShelves.get(0);
+                    bookGrid.setItems(selectedShelf.getBooks());
+                } else {
+                    LOGGER.log(Level.SEVERE, matchingShelves.size() + " matching shelves found for " + chosenShelf);
+                }
+            } else {
+                LOGGER.log(Level.SEVERE, "No matching shelves found for " + chosenShelf);
+            }
         }
+    }
+
+    private void updateShelfList() {
+        List<String> shelfNames = new ArrayList<>();
+        // first add the predefined shelves
+        for (PredefinedShelf.ShelfName name : PredefinedShelf.ShelfName.values()) {
+            shelfNames.add(name.toString());
+        }
+        LOGGER.log(Level.INFO, "custom shelf service size: " + customShelfService.findAll().size());
+        shelfNames.addAll(customShelfService.findAll().stream()
+                .map(CustomShelf::getShelfName)
+                .collect(Collectors.toList()));
+        whichShelf.setItems(shelfNames);
+
+        LOGGER.log(Level.INFO, "in updateShelfList()");
     }
 
     private void configureFilter() {
@@ -247,4 +319,14 @@ public class BooksInShelfView extends VerticalLayout {
             updateList();
         }
     }
+
+    private void saveShelf(CustomShelfForm.SaveEvent event) {
+        if (event.getCustomShelf() == null) {
+            LOGGER.log(Level.SEVERE, "Retrieved shelf from event is null");
+        } else {
+            customShelfService.save(event.getCustomShelf());
+            updateShelfList();
+        }
+    }
+
 }

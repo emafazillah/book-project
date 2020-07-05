@@ -17,11 +17,13 @@ package com.karankumar.bookproject.backend.service;
 
 import com.karankumar.bookproject.backend.model.Author;
 import com.karankumar.bookproject.backend.model.Book;
+import com.karankumar.bookproject.backend.model.CustomShelf;
 import com.karankumar.bookproject.backend.model.Genre;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.model.RatingScale;
 import com.karankumar.bookproject.backend.repository.AuthorRepository;
 import com.karankumar.bookproject.backend.repository.BookRepository;
+import com.karankumar.bookproject.backend.repository.CustomShelfRepository;
 import com.karankumar.bookproject.backend.repository.PredefinedShelfRepository;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Service;
@@ -45,12 +47,15 @@ public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
 
     private BookRepository bookRepository;
     private PredefinedShelfRepository predefinedShelfRepository;
+    private CustomShelfRepository customShelfRepository;
     private AuthorRepository authorRepository;
 
     public PredefinedShelfService(BookRepository bookRepository, AuthorRepository authorRepository,
-                                  PredefinedShelfRepository shelfRepository) {
+                                  PredefinedShelfRepository predefinedShelfRepository,
+                                  CustomShelfRepository customShelfRepository) {
         this.bookRepository = bookRepository;
-        this.predefinedShelfRepository = shelfRepository;
+        this.predefinedShelfRepository = predefinedShelfRepository;
+        this.customShelfRepository = customShelfRepository;
 
         this.authorRepository = authorRepository;
     }
@@ -141,6 +146,15 @@ public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
 
                         return book;
                     }).collect(Collectors.toList()));
+        }
+
+        if (customShelfRepository.count() == 0) {
+            List<Book> books = bookRepository.findAll();
+            customShelfRepository.saveAll(
+                    Stream.of(
+                           "Custom shelf 1",
+                           "Custom shelf 2"
+                   ).map(shelfName -> new CustomShelf(shelfName, new HashSet<>(books))).collect(Collectors.toList()));
         }
 
         if (predefinedShelfRepository.count() == 0) {

@@ -17,15 +17,19 @@ package com.karankumar.bookproject.ui.shelf;
 
 import com.karankumar.bookproject.backend.model.CustomShelf;
 import com.karankumar.bookproject.backend.service.CustomShelfService;
+import com.vaadin.flow.component.ComponentEvent;
+import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.Binder;
+import com.vaadin.flow.shared.Registration;
 import lombok.extern.java.Log;
 
 import java.util.logging.Level;
@@ -81,12 +85,41 @@ public class CustomShelfForm extends VerticalLayout {
     private void configureSaveButton() {
         saveButton.setText("Add shelf");
         saveButton.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
+        saveButton.addClickListener(click -> validateOnSave());
+    }
+
+    private void validateOnSave() {
+        if (binder.isValid()) {
+            fireEvent(new SaveEvent(this, binder.getBean()));
+            if (binder.getBean() != null && binder.getBean().getShelfName() != null) {
+                showConfirmation(binder.getBean().getShelfName());
+            } else {
+                if (shelfName.getValue() != null) {
+                    CustomShelf customShelf = new CustomShelf(shelfName.getValue());
+                    binder.setBean(customShelf);
+                    showConfirmation(binder.getBean().getShelfName());
+                }
+            }
+            closeForm();
+        } else {
+            LOGGER.log(Level.SEVERE, "Invalid binder");
+        }
+    }
+
+    private void showConfirmation(String shelfName) {
+        Notification notification = new Notification("Created a new shelf called " + shelfName, 3000);
+        notification.open();
+    }
+
+    private void closeForm() {
+        dialog.close();
     }
 
     private void configureBinder() {
         binder.forField(shelfName)
             .asRequired("Please enter a shelf name")
             .bind(CustomShelf::getShelfName, CustomShelf::setShelfName);
+        binder.addStatusChangeListener(event -> saveButton.setEnabled(binder.isValid()));
     }
 
     public void addShelf() {
@@ -96,6 +129,31 @@ public class CustomShelfForm extends VerticalLayout {
     private void openForm() {
         dialog.open();
         LOGGER.log(Level.INFO, "Opened shelf form");
+    }
+
+    public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType,
+                                                                  ComponentEventListener<T> listener) {
+        return getEventBus().addListener(eventType, listener);
+    }
+
+    // Events
+    public static abstract class CustomShelfEvent extends ComponentEvent<CustomShelfForm> {
+        private CustomShelf customShelf;
+
+        protected CustomShelfEvent(CustomShelfForm source, CustomShelf customShelf) {
+            super(source, false);
+            this.customShelf = customShelf;
+        }
+
+        public CustomShelf getCustomShelf() {
+            return customShelf;
+        }
+    }
+
+    public static class SaveEvent extends CustomShelfEvent {
+        SaveEvent(CustomShelfForm source, CustomShelf customShelf) {
+            super(source, customShelf);
+        }
     }
 
 }
