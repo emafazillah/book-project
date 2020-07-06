@@ -23,12 +23,11 @@ import com.karankumar.bookproject.backend.model.Genre;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.model.RatingScale;
 import com.karankumar.bookproject.backend.service.BookService;
+import com.karankumar.bookproject.backend.service.CustomShelfService;
 import com.karankumar.bookproject.backend.service.PredefinedShelfService;
 import com.karankumar.bookproject.ui.book.BookForm;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.spring.SpringServlet;
-import java.time.LocalDate;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -44,6 +43,9 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
+
+import java.time.LocalDate;
+import java.util.concurrent.atomic.AtomicReference;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
@@ -76,16 +78,16 @@ public class BookFormTests {
     }
 
     @BeforeEach
-    public void setup(@Autowired PredefinedShelfService shelfService) {
+    public void setup(@Autowired PredefinedShelfService predefinedShelfService, @Autowired CustomShelfService customShelfService) {
         final SpringServlet servlet = new MockSpringServlet(routes, ctx);
         MockVaadin.setup(UI::new, servlet);
 
         Assumptions.assumeTrue(bookService != null);
         bookService.deleteAll();
 
-        Assumptions.assumeTrue(shelfService != null);
+        Assumptions.assumeFalse(predefinedShelfService == null && customShelfService == null);
 
-        readShelf = shelfService.findAll().get(2);
+        readShelf = predefinedShelfService.findAll().get(2);
         book.setShelf(readShelf);
         book.setGenre(genre);
         book.setNumberOfPages(pageCount);
@@ -93,7 +95,7 @@ public class BookFormTests {
         book.setDateFinishedReading(dateFinished);
         book.setRating(ratingVal);
 
-        bookForm = new BookForm(shelfService);
+        bookForm = new BookForm(predefinedShelfService, customShelfService);
         bookForm.setBook(book);
     }
 

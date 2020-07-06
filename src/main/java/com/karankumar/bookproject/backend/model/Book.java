@@ -59,7 +59,7 @@ public class Book extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.REFRESH})
     @JoinColumn(name = "shelf_id")
-    private PredefinedShelf shelf;
+    private PredefinedShelf predefinedShelf;
 
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<CustomShelf> customShelves;

@@ -44,6 +44,8 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
+import static com.karankumar.bookproject.ui.shelf.ShelfUtils.whichPredefinedShelf;
+
 /**
  * Contains a {@code BookForm} and a Grid containing a list of books in a given {@code Shelf}.
  */
@@ -88,7 +90,7 @@ public class BooksInShelfView extends VerticalLayout {
         filterByTitle = new TextField();
         configureFilter();
 
-        bookForm = new BookForm(predefinedShelfService);
+        bookForm = new BookForm(predefinedShelfService, customShelfService);
         shelfForm = new CustomShelfForm(customShelfService);
 
         Button addBook = new Button("Add book");
@@ -126,18 +128,7 @@ public class BooksInShelfView extends VerticalLayout {
 
     private void configureChosenShelf() {
         whichShelf.setPlaceholder("Select shelf");
-
-        List<String> shelfNames = new ArrayList<>();
-        // first add the predefined shelves
-        for (PredefinedShelf.ShelfName name : PredefinedShelf.ShelfName.values()) {
-            shelfNames.add(name.toString());
-        }
-        shelfNames.addAll(customShelfService.findAll().stream()
-                .map(CustomShelf::getShelfName)
-                .collect(Collectors.toList()));
-        whichShelf.setItems(shelfNames);
-
-//        whichShelf.setItems(PredefinedShelf.ShelfName.values());
+        updateShelfList();
         whichShelf.setRequired(true);
         whichShelf.addValueChangeListener(event -> {
             if (event.getValue() == null) {
@@ -178,25 +169,6 @@ public class BooksInShelfView extends VerticalLayout {
                 break;
             default:
         }
-    }
-
-    /**
-     * Checks whether a shelf name matches a predefined shelf name.
-     *
-     * @param shelfName the name of the shelf to check whether it matches a predefined shelf
-     * @return the enum value of the PredefinedShelf. If the passed in shelf name does not match the name of a
-     * predefined shelf, null is returned.
-     */
-    private PredefinedShelf.ShelfName whichPredefinedShelf(String shelfName) {
-        PredefinedShelf.ShelfName predefinedShelf = null;
-        PredefinedShelf.ShelfName[] predefinedShelfNames = PredefinedShelf.ShelfName.values();
-        for (PredefinedShelf.ShelfName predefinedShelfName : predefinedShelfNames) {
-            if (predefinedShelfName.toString().equals(shelfName)) {
-                predefinedShelf = predefinedShelfName;
-                break;
-            }
-        }
-        return predefinedShelf;
     }
 
     private void toggleColumn(String columnKey, boolean isOn) {

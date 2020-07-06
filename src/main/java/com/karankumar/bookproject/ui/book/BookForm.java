@@ -17,8 +17,10 @@ package com.karankumar.bookproject.ui.book;
 
 import com.karankumar.bookproject.backend.model.Author;
 import com.karankumar.bookproject.backend.model.Book;
+import com.karankumar.bookproject.backend.model.CustomShelf;
 import com.karankumar.bookproject.backend.model.Genre;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
+import com.karankumar.bookproject.backend.service.CustomShelfService;
 import com.karankumar.bookproject.backend.service.PredefinedShelfService;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
@@ -43,9 +45,13 @@ import lombok.extern.java.Log;
 
 import javax.transaction.NotSupportedException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
+
+import static com.karankumar.bookproject.ui.shelf.ShelfUtils.whichPredefinedShelf;
 
 /**
  * A Vaadin form for adding a new {@code Book}.
@@ -63,26 +69,30 @@ public class BookForm extends VerticalLayout {
     public final TextField bookTitle = new TextField();
     public final TextField authorFirstName = new TextField();
     public final TextField authorLastName = new TextField();
-    public final ComboBox<PredefinedShelf.ShelfName> shelf = new ComboBox<>();
+//    public final ComboBox<PredefinedShelf.ShelfName> shelf = new ComboBox<>();
+    public final ComboBox<String> shelf = new ComboBox<>();
     public final ComboBox<Genre> bookGenre = new ComboBox<>();
     public final IntegerField pageCount = new IntegerField();
     public final DatePicker dateStartedReading = new DatePicker();
     public final DatePicker dateFinishedReading = new DatePicker();
     public final NumberField rating = new NumberField();
     public final Button saveButton = new Button();
-    private final PredefinedShelfService shelfService;
+
+    private final PredefinedShelfService predefinedShelfService;
     private final Button reset = new Button();
     private final FormLayout.FormItem started;
     private final FormLayout.FormItem finished;
     private final FormLayout.FormItem ratingFormItem;
     private final Dialog dialog;
+    private final CustomShelfService customShelfService;
 
     public Button delete = new Button();
 
     Binder<Book> binder = new BeanValidationBinder<>(Book.class);
 
-    public BookForm(PredefinedShelfService shelfService) {
-        this.shelfService = shelfService;
+    public BookForm(PredefinedShelfService predefinedShelfService, CustomShelfService customShelfService) {
+        this.predefinedShelfService = predefinedShelfService;
+        this.customShelfService = customShelfService;
 
         dialog = new Dialog();
         dialog.setCloseOnOutsideClick(true);
@@ -166,7 +176,7 @@ public class BookForm extends VerticalLayout {
             .bind("author.lastName");
         binder.forField(shelf)
             .withValidator(Objects::nonNull, "Please select a shelf")
-            .bind("shelf.shelfName");
+            .bind("predefined.shelfName");
         binder.forField(dateStartedReading)
             .withValidator(startDate -> !(startDate != null && startDate.isAfter(LocalDate.now())),
                 AFTER_TODAY_PREFIX + " started " + AFTER_TODAY_SUFFIX)
@@ -234,7 +244,7 @@ public class BookForm extends VerticalLayout {
                     Book book = new Book(bookTitle.getValue(), author);
 
                     if (shelf.getValue() != null) {
-                        List<PredefinedShelf> shelves = shelfService.findAll(shelf.getValue());
+                        List<PredefinedShelf> shelves = predefinedShelfService.findAll(shelf.getValue());
                         if (shelves.size() == 1) {
                             book.setShelf(shelves.get(0));
                             LOGGER.log(Level.INFO, "Shelf: " + shelves.get(0));
@@ -267,7 +277,7 @@ public class BookForm extends VerticalLayout {
     }
 
     private void moveBookToDifferentShelf() {
-        List<PredefinedShelf> shelves = shelfService.findAll(shelf.getValue());
+        List<PredefinedShelf> shelves = predefinedShelfService.findAll(shelf.getValue());
         if (shelves.size() == 1) {
             Book book = binder.getBean();
             book.setShelf(shelves.get(0));
@@ -339,14 +349,22 @@ public class BookForm extends VerticalLayout {
         shelf.setPlaceholder("Choose a shelf");
         shelf.setClearButtonVisible(true);
 
-        shelf.setItems(PredefinedShelf.ShelfName.values());
+//        shelf.setItems(PredefinedShelf.ShelfName.values());
+        updateShelfList();
     }
 
     /**
      * @throws NotSupportedException if an a shelf name is not yet supported
      */
-    private void hideDates(PredefinedShelf.ShelfName name) throws NotSupportedException {
-        switch (name) {
+    private void hideDates(String shelfName) throws NotSupportedException {
+        PredefinedShelf.ShelfName predefinedShelfName = whichPredefinedShelf(shelfName);
+        if (predefinedShelfName == null) {
+            showStartDate();
+            showFinishDate();
+            return;
+        }
+
+        switch (predefinedShelfName) {
             case TO_READ:
                 started.setVisible(false);
                 hideFinishDate();
@@ -361,7 +379,7 @@ public class BookForm extends VerticalLayout {
                 showFinishDate();
                 break;
             default:
-                throw new NotSupportedException("Shelf " + name + " not yet supported");
+                throw new NotSupportedException("Shelf " + shelfName + " not yet supported");
         }
     }
 
@@ -384,10 +402,16 @@ public class BookForm extends VerticalLayout {
     }
 
     /**
-     * @throws NotSupportedException if an a shelf name is not yet supported
+     * @throws NotSupportedException if a shelf name is not yet supported
      */
-    private void showOrHideRating(PredefinedShelf.ShelfName name) throws NotSupportedException {
-        switch (name) {
+    private void showOrHideRating(String shelfName) throws NotSupportedException {
+        PredefinedShelf.ShelfName predefinedShelfName = whichPredefinedShelf(shelfName);
+        if (predefinedShelfName == null) {
+            ratingFormItem.setVisible(true);
+            return;
+        }
+
+        switch (predefinedShelfName) {
             case TO_READ:
             case READING:
             case DID_NOT_FINISH:
@@ -397,7 +421,7 @@ public class BookForm extends VerticalLayout {
                 ratingFormItem.setVisible(true);
                 break;
             default:
-                throw new NotSupportedException("Shelf " + name + " not yet supported");
+                throw new NotSupportedException("Shelf " + predefinedShelfName + " not yet supported");
         }
     }
 
@@ -454,6 +478,21 @@ public class BookForm extends VerticalLayout {
     public void addBook() {
         clearForm();
         openForm();
+    }
+
+    private void updateShelfList() {
+        List<String> shelfNames = new ArrayList<>();
+        // first add the predefined shelves
+        for (PredefinedShelf.ShelfName name : PredefinedShelf.ShelfName.values()) {
+            shelfNames.add(name.toString());
+        }
+        LOGGER.log(Level.INFO, "custom shelf service size: " + customShelfService.findAll().size());
+        shelfNames.addAll(customShelfService.findAll().stream()
+                                            .map(CustomShelf::getShelfName)
+                                            .collect(Collectors.toList()));
+        shelf.setItems(shelfNames);
+
+        LOGGER.log(Level.INFO, "in updateShelfList()");
     }
 
     public <T extends ComponentEvent<?>> Registration addListener(Class<T> eventType,
