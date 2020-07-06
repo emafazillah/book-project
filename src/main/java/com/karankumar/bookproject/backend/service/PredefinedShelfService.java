@@ -175,7 +175,7 @@ public class PredefinedShelfService extends BaseService<PredefinedShelf, Long> {
 
         for (Book book : books) {
             PredefinedShelf shelf = shelves.get(random.nextInt(shelves.size()));
-            book.setShelf(shelf);
+            book.setPredefinedShelf(shelf);
             switch (shelf.shelfName) {
                 case TO_READ:
                     book.setDateStartedReading(null);

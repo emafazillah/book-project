@@ -15,18 +15,19 @@
 
 package com.karankumar.bookproject.backend.model;
 
-import java.util.Set;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.OneToMany;
 import javax.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -37,7 +38,7 @@ public class PredefinedShelf extends BaseEntity {
     @NotNull
     @Enumerated(value = EnumType.STRING)
     public ShelfName shelfName;
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "shelf")
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "predefinedShelf")
     private Set<Book> books;
 
     public PredefinedShelf(ShelfName shelfName) {

@@ -54,12 +54,12 @@ public class BookService extends BaseService<Book, Long> {
                 LOGGER.log(Level.SEVERE, "Author is null");
             }
 
-            if (book.getShelf() != null) {
-                if (book.getShelf().getShelfName() == null) {
+            if (book.getPredefinedShelf() != null) {
+                if (book.getPredefinedShelf().getShelfName() == null) {
                     LOGGER.log(Level.SEVERE, "Shelf name should not be null");
                 } else {
                     LOGGER.log(Level.INFO,
-                        "Shelf name (" + book.getShelf().getShelfName() + ") is not null");
+                        "Shelf name (" + book.getPredefinedShelf().getShelfName() + ") is not null");
                 }
             } else {
                 LOGGER.log(Level.SEVERE, "Shelf is null");

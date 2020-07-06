@@ -88,7 +88,7 @@ public class BookFormTests {
         Assumptions.assumeFalse(predefinedShelfService == null && customShelfService == null);
 
         readShelf = predefinedShelfService.findAll().get(2);
-        book.setShelf(readShelf);
+        book.setPredefinedShelf(readShelf);
         book.setGenre(genre);
         book.setNumberOfPages(pageCount);
         book.setDateStartedReading(dateStarted);
@@ -138,7 +138,7 @@ public class BookFormTests {
         Assertions.assertEquals(bookTitle, savedOrDeletedBook.getTitle());
         Assertions.assertEquals(firstName, savedOrDeletedBook.getAuthor().getFirstName());
         Assertions.assertEquals(lastName, savedOrDeletedBook.getAuthor().getLastName());
-        Assertions.assertEquals(readShelf.getShelfName(), savedOrDeletedBook.getShelf().getShelfName());
+        Assertions.assertEquals(readShelf.getShelfName(), savedOrDeletedBook.getPredefinedShelf().getShelfName());
         Assertions.assertEquals(genre, savedOrDeletedBook.getGenre());
         Assertions.assertEquals(pageCount, savedOrDeletedBook.getNumberOfPages());
         Assertions.assertEquals(dateStarted, savedOrDeletedBook.getDateStartedReading());
@@ -150,7 +150,7 @@ public class BookFormTests {
         bookForm.authorFirstName.setValue(firstName);
         bookForm.authorLastName.setValue(lastName);
         bookForm.bookTitle.setValue(bookTitle);
-        bookForm.shelf.setValue(readShelf.getShelfName());
+        bookForm.shelf.setValue(readShelf.getShelfName().toString());
         bookForm.bookGenre.setValue(genre);
         bookForm.pageCount.setValue(pageCount);
         bookForm.dateStartedReading.setValue(dateStarted);

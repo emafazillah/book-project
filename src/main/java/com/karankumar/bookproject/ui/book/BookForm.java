@@ -22,6 +22,7 @@ import com.karankumar.bookproject.backend.model.Genre;
 import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.service.CustomShelfService;
 import com.karankumar.bookproject.backend.service.PredefinedShelfService;
+import com.karankumar.bookproject.ui.shelf.ShelfUtils;
 import com.vaadin.flow.component.ComponentEvent;
 import com.vaadin.flow.component.ComponentEventListener;
 import com.vaadin.flow.component.HasSize;
@@ -142,6 +143,7 @@ public class BookForm extends VerticalLayout {
             	try {
                     hideDates(shelf.getValue());
                     showOrHideRating(shelf.getValue());
+                    configureShelfBinding(shelf.getValue());
                 } catch (IllegalArgumentException | NotSupportedException e) {
                     e.printStackTrace();
                 }
@@ -149,6 +151,23 @@ public class BookForm extends VerticalLayout {
         });
 
         add(dialog);
+    }
+
+    private void configureShelfBinding(String shelfName) {
+        if (shelfName != null) {
+            PredefinedShelf.ShelfName predefinedShelfName = whichPredefinedShelf(shelfName);
+            if (predefinedShelfName == null) {
+                // a custom shelf was selected
+                binder.forField(shelf)
+                      .withValidator(Objects::nonNull, "Please select a shelf")
+                      .bind("customShelves.shelfName");
+            } else {
+                // a predefined shelf was selected
+                binder.forField(shelf)
+                      .withValidator(Objects::nonNull, "Please select a shelf")
+                      .bind("predefinedShelf.shelfName");
+            }
+        }
     }
 
     public void openForm() {
@@ -174,9 +193,9 @@ public class BookForm extends VerticalLayout {
             .withValidator(lastName -> (lastName != null && !lastName.isEmpty()),
                 "Please enter the author's last name")
             .bind("author.lastName");
-        binder.forField(shelf)
-            .withValidator(Objects::nonNull, "Please select a shelf")
-            .bind("predefined.shelfName");
+//        binder.forField(shelf)
+//            .withValidator(Objects::nonNull, "Please select a shelf")
+//            .bind("predefinedShelf.shelfName");
         binder.forField(dateStartedReading)
             .withValidator(startDate -> !(startDate != null && startDate.isAfter(LocalDate.now())),
                 AFTER_TODAY_PREFIX + " started " + AFTER_TODAY_SUFFIX)
@@ -244,13 +263,23 @@ public class BookForm extends VerticalLayout {
                     Book book = new Book(bookTitle.getValue(), author);
 
                     if (shelf.getValue() != null) {
-                        List<PredefinedShelf> shelves = predefinedShelfService.findAll(shelf.getValue());
-                        if (shelves.size() == 1) {
-                            book.setShelf(shelves.get(0));
-                            LOGGER.log(Level.INFO, "Shelf: " + shelves.get(0));
+
+                        PredefinedShelf.ShelfName predefinedShelf = whichPredefinedShelf(shelf.getValue());
+                        if (predefinedShelf == null) {
+                            // this is a custom shelf, not a predefined shelf
+
+                            // TODO: implement
                         } else {
-                            LOGGER.log(Level.INFO, "Shelves count = " + shelves.size());
+                            List<PredefinedShelf> shelves = predefinedShelfService.findAll(predefinedShelf);
+                            if (shelves.size() == 1) {
+                                book.setPredefinedShelf(shelves.get(0));
+                                LOGGER.log(Level.INFO, "Shelf: " + shelves.get(0));
+                            } else {
+                                LOGGER.log(Level.INFO, "Shelves count = " + shelves.size());
+                            }
                         }
+
+
 
                     } else {
                         LOGGER.log(Level.SEVERE, "Null shelf");
@@ -277,14 +306,19 @@ public class BookForm extends VerticalLayout {
     }
 
     private void moveBookToDifferentShelf() {
-        List<PredefinedShelf> shelves = predefinedShelfService.findAll(shelf.getValue());
-        if (shelves.size() == 1) {
-            Book book = binder.getBean();
-            book.setShelf(shelves.get(0));
-            LOGGER.log(Level.INFO, "2) Shelf: " + shelves.get(0));
-            binder.setBean(book);
+        PredefinedShelf.ShelfName predefinedShelfName = ShelfUtils.whichPredefinedShelf(shelf.getValue());
+        if (predefinedShelfName == null) {
+
         } else {
-            LOGGER.log(Level.INFO, "2) Shelves count = " + shelves.size());
+            List<PredefinedShelf> shelves = predefinedShelfService.findAll(predefinedShelfName);
+            if (shelves.size() == 1) {
+                Book book = binder.getBean();
+                book.setPredefinedShelf((shelves.get(0)));
+                LOGGER.log(Level.INFO, "2) Shelf: " + shelves.get(0));
+                binder.setBean(book);
+            } else {
+                LOGGER.log(Level.INFO, "2) Shelves count = " + shelves.size());
+            }
         }
     }
 

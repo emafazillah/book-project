@@ -21,8 +21,6 @@ import com.karankumar.bookproject.backend.model.PredefinedShelf;
 import com.karankumar.bookproject.backend.service.AuthorService;
 import com.karankumar.bookproject.backend.service.BookService;
 import com.karankumar.bookproject.backend.service.PredefinedShelfService;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,6 +28,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @SpringBootTest
 class AuthorTests {
@@ -63,8 +64,8 @@ class AuthorTests {
                 .collect(Collectors.toList())
                 .get(0);
 
-        testBook1.setShelf(toRead);
-        testBook2.setShelf(toRead);
+        testBook1.setPredefinedShelf(toRead);
+        testBook2.setPredefinedShelf(toRead);
 
         AuthorTests.bookService.save(testBook1);
         AuthorTests.bookService.save(testBook2);
